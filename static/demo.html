@@ -341,7 +341,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   <div class="demo-center">
     <div class="eyebrow animate" style="font-size:14px;letter-spacing:4px">Live Demo</div>
     <div class="hero animate" style="font-size:96px">Let's <span>watch</span> it.</div>
-    <div class="demo-url animate">localhost:8011</div>
+    <div class="demo-url animate">localhost:8000</div>
     <div class="demo-hint animate">Paste any YouTube URL → select a language → Dhvani dubs it live</div>
   </div>
 </div>
@@ -369,10 +369,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     </div>
     <div class="pipe-arrow"><span>→</span></div>
     <div class="pipe-stage highlight">
-      <div class="pipe-icon">🧠</div>
-      <div class="pipe-name">Brain</div>
+      <div class="pipe-icon">🌐</div>
+      <div class="pipe-name">Translation</div>
       <div class="pipe-model">GPT-OSS 120B</div>
-      <div class="pipe-detail">Translation<br/>→ Higgs AST fallback</div>
+      <div class="pipe-detail">Translate to target lang<br/>→ Higgs AST fallback</div>
     </div>
     <div class="pipe-arrow"><span>→</span></div>
     <div class="pipe-stage highlight">
@@ -436,18 +436,18 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 <div class="slide" data-act="Act III — How It Works">
   <div class="eyebrow animate">Concurrency</div>
   <div class="section-title animate">3 stages. <span>Running simultaneously.</span></div>
-  <div class="section-sub animate">While TTS speaks chunk N → Brain translates N+1 → ASR transcribes N+2</div>
+  <div class="section-sub animate">While Voice Output plays chunk N → Translation processes N+1 → Transcription processes N+2</div>
   <div class="queue-diagram animate" id="queueDiagram">
     <div class="queue-row">
-      <div class="queue-label">ASR stage</div>
+      <div class="queue-label">Transcription</div>
       <div class="queue-lane" id="lane-asr"></div>
     </div>
     <div class="queue-row">
-      <div class="queue-label">Brain stage</div>
+      <div class="queue-label">Translation</div>
       <div class="queue-lane" id="lane-brain"></div>
     </div>
     <div class="queue-row">
-      <div class="queue-label">TTS stage</div>
+      <div class="queue-label">Voice Output</div>
       <div class="queue-lane" id="lane-tts"></div>
     </div>
     <div class="queue-row">
@@ -456,17 +456,17 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     </div>
   </div>
   <div class="queue-legend animate">
-    <div class="ql-item"><div class="ql-dot" style="background:rgba(59,130,246,.7)"></div> Transcribing</div>
-    <div class="ql-item"><div class="ql-dot" style="background:rgba(168,85,247,.7)"></div> Translating</div>
-    <div class="ql-item"><div class="ql-dot" style="background:rgba(229,9,20,.7)"></div> Generating TTS</div>
+    <div class="ql-item"><div class="ql-dot" style="background:rgba(59,130,246,.7)"></div> Transcription</div>
+    <div class="ql-item"><div class="ql-dot" style="background:rgba(168,85,247,.7)"></div> Translation</div>
+    <div class="ql-item"><div class="ql-dot" style="background:rgba(229,9,20,.7)"></div> Voice Output</div>
     <div class="ql-item"><div class="ql-dot" style="background:rgba(70,211,105,.5)"></div> Playing</div>
   </div>
   <div style="margin-top:24px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px;font-family:var(--mono);font-size:12px;color:var(--text3);max-width:700px" class="animate">
     <span style="color:var(--text4)">python</span>&nbsp;&nbsp;
     <span style="color:var(--purple)">await</span> asyncio.<span style="color:var(--green)">gather</span>(
-    <span style="color:var(--blue)">asr_stage</span>(),&nbsp;
-    <span style="color:var(--purple)">brain_stage</span>(),&nbsp;
-    <span style="color:var(--red)">tts_stage</span>()
+    <span style="color:var(--blue)">transcription_stage</span>(),&nbsp;
+    <span style="color:var(--purple)">translation_stage</span>(),&nbsp;
+    <span style="color:var(--red)">voice_output_stage</span>()
     )
     &nbsp;&nbsp;<span style="color:var(--text4)"># bounded queues: maxsize=6</span>
   </div>
@@ -478,7 +478,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 <div class="slide" data-act="Act III — How It Works">
   <div class="eyebrow animate">Quality control</div>
   <div class="section-title animate">ASR <span>hallucination filter</span></div>
-  <div class="section-sub animate">Whisper-class models sometimes invent text. We catch it using YouTube's own captions.</div>
+  <div class="section-sub animate">ASR speech-to-text models sometimes invent text. We catch it using YouTube's own captions.</div>
   <div class="hall-flow animate">
     <div class="hall-row">
       <div class="hall-box whisper">
