@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dhvani — Demo Presentation</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e0e;--surface:#161616;--surface2:#1e1e1e;--surface3:#252525;
+  --border:#2a2a2a;--border2:#383838;
+  --red:#e50914;--red-dim:rgba(229,9,20,.12);--red-glow:rgba(229,9,20,.35);
+  --green:#46d369;--yellow:#e5a00d;--blue:#3b82f6;--purple:#a855f7;
+  --text:#ffffff;--text2:#c0c0c0;--text3:#808080;--text4:#4a4a4a;
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',-apple-system,sans-serif;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--sans)}
+
+/* ── SLIDES ── */
+.deck{width:100vw;height:100vh;position:relative;overflow:hidden}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 80px;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s ease, transform .5s ease;
+  transform:translateX(60px);
+}
+.slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-60px)}
+
+/* ── NAV ── */
+.nav{
+  position:fixed;bottom:32px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:16px;z-index:100;
+}
+.nav-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--border2);
+  cursor:pointer;transition:all .3s;
+}
+.nav-dot.active{background:var(--red);transform:scale(1.4)}
+.nav-arrow{
+  position:fixed;top:50%;transform:translateY(-50%);
+  width:44px;height:44px;border-radius:50%;border:1px solid var(--border2);
+  background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:var(--text3);transition:all .2s;z-index:100;
+}
+.nav-arrow:hover{border-color:var(--red);color:var(--text);background:var(--red-dim)}
+.nav-prev{left:24px}
+.nav-next{right:24px}
+.slide-counter{
+  position:fixed;top:24px;right:32px;
+  font-family:var(--mono);font-size:11px;color:var(--text4);z-index:100;
+}
+.act-label{
+  position:fixed;top:24px;left:32px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;
+  color:var(--text4);z-index:100;
+}
+
+/* ── TYPOGRAPHY ── */
+.eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--red);margin-bottom:16px}
+.hero{font-size:72px;font-weight:900;line-height:1;letter-spacing:-2px;margin-bottom:24px}
+.hero span{color:var(--red)}
+.subhead{font-size:20px;color:var(--text2);font-weight:400;line-height:1.6;max-width:680px;text-align:center}
+.section-title{font-size:42px;font-weight:800;letter-spacing:-1px;margin-bottom:8px}
+.section-title span{color:var(--red)}
+.section-sub{font-size:15px;color:var(--text3);margin-bottom:48px}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;width:100%;max-width:960px}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:32px 28px;text-align:center;
+  transition:border-color .3s,transform .3s;
+}
+.stat-card:hover{border-color:var(--red);transform:translateY(-4px)}
+.stat-num{font-size:52px;font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:8px}
+.stat-num.red{color:var(--red)}
+.stat-num.green{color:var(--green)}
+.stat-num.yellow{color:var(--yellow)}
+.stat-label{font-size:13px;color:var(--text3);line-height:1.5;font-weight:500}
+.stat-sub{font-size:11px;color:var(--text4);margin-top:6px}
+
+/* ── CHARTS ── */
+.chart-wrap{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:28px;position:relative;
+}
+.chart-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:20px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;width:100%;max-width:1100px}
+.one-col{width:100%;max-width:900px}
+
+/* ── DEMO SLIDE ── */
+.demo-center{text-align:center}
+.demo-url{
+  font-family:var(--mono);font-size:28px;font-weight:600;
+  background:var(--surface2);border:2px solid var(--red);border-radius:10px;
+  padding:18px 40px;margin:32px auto;display:inline-block;
+  box-shadow:0 0 40px var(--red-glow);
+  animation:glow-pulse 2s infinite;
+}
+@keyframes glow-pulse{0%,100%{box-shadow:0 0 30px var(--red-glow)}50%{box-shadow:0 0 60px rgba(229,9,20,.5)}}
+.demo-hint{font-size:14px;color:var(--text4);margin-top:16px}
+
+/* ── PIPELINE ── */
+.pipeline{display:flex;align-items:center;gap:0;width:100%;max-width:1000px;margin:0 auto}
+.pipe-stage{
+  flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:20px 16px;text-align:center;position:relative;
+}
+.pipe-stage.highlight{border-color:var(--red);background:var(--red-dim)}
+.pipe-icon{font-size:28px;margin-bottom:8px}
+.pipe-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+.pipe-model{font-family:var(--mono);font-size:10px;color:var(--red);font-weight:600}
+.pipe-detail{font-size:11px;color:var(--text4);margin-top:4px;line-height:1.4}
+.pipe-arrow{
+  width:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  color:var(--text4);font-size:20px;position:relative;
+}
+.pipe-arrow::after{
+  content:'';position:absolute;top:50%;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--border),var(--red),var(--border));
+}
+.pipe-arrow span{background:var(--bg);padding:0 4px;position:relative;z-index:1;font-size:14px}
+
+/* ── QUEUE DIAGRAM ── */
+.queue-diagram{width:100%;max-width:1000px}
+.queue-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.queue-label{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text3);width:100px;text-align:right;flex-shrink:0}
+.queue-lane{flex:1;height:40px;background:var(--surface);border:1px solid var(--border);border-radius:6px;position:relative;overflow:hidden}
+.queue-chunk{
+  position:absolute;top:4px;height:32px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10px;font-weight:600;color:white;
+  transition:left .8s ease,background .3s;
+}
+.q-asr{background:rgba(59,130,246,.7);border:1px solid var(--blue)}
+.q-brain{background:rgba(168,85,247,.7);border:1px solid var(--purple)}
+.q-tts{background:rgba(229,9,20,.7);border:1px solid var(--red)}
+.q-done{background:rgba(70,211,105,.5);border:1px solid var(--green)}
+.queue-legend{display:flex;gap:20px;margin-top:16px;justify-content:center}
+.ql-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3)}
+.ql-dot{width:10px;height:10px;border-radius:2px}
+
+/* ── CHUNKING ── */
+.chunk-timeline{width:100%;max-width:960px}
+.timeline-bar{
+  height:56px;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  position:relative;overflow:hidden;margin-bottom:12px;
+}
+.timeline-chunk{
+  position:absolute;top:6px;height:44px;border-radius:5px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10px;font-weight:600;
+  border:1px solid transparent;transition:transform .2s;cursor:default;
+}
+.timeline-chunk:hover{transform:scaleY(1.05)}
+.tc-num{font-size:9px;opacity:.7}
+.timeline-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--text4);margin-bottom:8px;padding:0 4px}
+.chunk-legend{display:flex;gap:20px;margin-top:16px;flex-wrap:wrap}
+.cl-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3)}
+.cl-dot{width:12px;height:12px;border-radius:3px}
+
+/* ── HALLUCINATION ── */
+.hall-flow{display:flex;flex-direction:column;gap:16px;width:100%;max-width:800px}
+.hall-row{display:flex;align-items:center;gap:16px}
+.hall-box{
+  flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:14px 18px;font-size:13px;
+}
+.hall-box.whisper{border-color:var(--blue)}
+.hall-box.caption{border-color:var(--yellow)}
+.hall-box.pass{border-color:var(--green)}
+.hall-box.fail{border-color:var(--red)}
+.hb-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.hb-label.blue{color:var(--blue)}
+.hb-label.yellow{color:var(--yellow)}
+.hb-label.green{color:var(--green)}
+.hb-label.red{color:var(--red)}
+.hb-text{font-family:var(--mono);font-size:12px;color:var(--text2)}
+.hall-arrow{font-size:18px;color:var(--text4);flex-shrink:0}
+.overlap-bar{height:8px;background:var(--border);border-radius:4px;margin-top:10px;overflow:hidden}
+.overlap-fill{height:100%;border-radius:4px;transition:width 1.5s ease}
+
+/* ── VOICE CLONE ── */
+.voice-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%;max-width:900px;margin-bottom:24px}
+.voice-chunk{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:16px 8px;text-align:center;transition:all .3s;
+}
+.voice-chunk.loud{border-color:var(--green);background:rgba(70,211,105,.08);transform:scale(1.05)}
+.vc-bar{height:40px;background:var(--border);border-radius:4px;margin:8px auto;width:60%;position:relative;overflow:hidden}
+.vc-fill{position:absolute;bottom:0;width:100%;border-radius:4px;transition:height 1s ease}
+.vc-label{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.vc-rms{font-size:10px;color:var(--text4);margin-top:4px}
+.voice-arrow{display:flex;align-items:center;justify-content:center;gap:16px;font-size:13px;color:var(--text3)}
+.voice-box{
+  background:var(--surface2);border:1px solid var(--green);border-radius:8px;
+  padding:12px 24px;font-family:var(--mono);font-size:12px;color:var(--green);font-weight:600;
+}
+
+/* ── LATENCY ── */
+.latency-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;max-width:900px;margin-bottom:32px}
+.lat-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:20px;text-align:center;
+}
+.lat-ms{font-size:36px;font-weight:900;letter-spacing:-1px;margin-bottom:4px}
+.lat-stage{font-size:12px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.lat-model{font-family:var(--mono);font-size:10px;color:var(--text4);margin-top:4px}
+
+/* ── CLOSING ── */
+.closing-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;width:100%;max-width:900px}
+.closing-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:28px;
+}
+.cc-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:16px}
+.cc-item{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;font-size:14px;color:var(--text2)}
+.cc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:6px}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.slide.active .animate{animation:fadeUp .5s ease forwards;opacity:0}
+.slide.active .animate:nth-child(1){animation-delay:.1s}
+.slide.active .animate:nth-child(2){animation-delay:.2s}
+.slide.active .animate:nth-child(3){animation-delay:.3s}
+.slide.active .animate:nth-child(4){animation-delay:.4s}
+.slide.active .animate:nth-child(5){animation-delay:.5s}
+.slide.active .animate:nth-child(6){animation-delay:.6s}
+
+/* keyboard hint */
+.key-hint{position:fixed;bottom:24px;right:32px;font-size:11px;color:var(--text4);font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+<!-- ════════════════════════════════════════════
+     SLIDE 1 — TITLE
+════════════════════════════════════════════ -->
+<div class="slide active" data-act="Dhvani">
+  <div class="eyebrow animate">Boson x Eigen AI Hackathon 2026</div>
+  <div class="hero animate">Dhv<span>a</span>ni</div>
+  <div class="subhead animate">Real-time YouTube dubbing with voice cloning and emotion preservation.<br/>Every video. Any language. Instantly.</div>
+  <div style="margin-top:48px;display:flex;gap:12px" class="animate">
+    <span style="padding:8px 20px;border-radius:6px;border:1px solid var(--border2);font-size:12px;font-family:var(--mono);color:var(--text3)">Higgs ASR 3</span>
+    <span style="padding:8px 20px;border-radius:6px;border:1px solid var(--border2);font-size:12px;font-family:var(--mono);color:var(--text3)">GPT-OSS 120B</span>
+    <span style="padding:8px 20px;border-radius:6px;border:1px solid var(--border2);font-size:12px;font-family:var(--mono);color:var(--text3)">Higgs TTS 2.5</span>
+    <span style="padding:8px 20px;border-radius:6px;border:1px solid var(--red);background:var(--red-dim);font-size:12px;font-family:var(--mono);color:var(--red)">Voice Clone</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 2 — THE SCALE
+════════════════════════════════════════════ -->
+<div class="slide" data-act="Act I — The Problem">
+  <div class="eyebrow animate">The scale of the problem</div>
+  <div class="section-title animate">YouTube is <span>massive</span>. Dubbing is not.</div>
+  <div class="section-sub animate">The numbers tell the story</div>
+  <div class="stat-grid animate">
+    <div class="stat-card">
+      <div class="stat-num red">500hrs</div>
+      <div class="stat-label">of video uploaded<br/>every single minute</div>
+      <div class="stat-sub">That's 720,000 hours per day</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num yellow">56%</div>
+      <div class="stat-label">of YouTube content<br/>is English-only</div>
+      <div class="stat-sub">Despite English being ~17% of global population</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--blue)">$35/min</div>
+      <div class="stat-label">average cost of<br/>professional dubbing</div>
+      <div class="stat-sub">A 10-min video costs $350+ to dub manually</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 3 — LANGUAGE GAP CHART
+════════════════════════════════════════════ -->
+<div class="slide" data-act="Act I — The Problem">
+  <div class="eyebrow animate">The growing gap</div>
+  <div class="section-title animate">Non-English internet users are <span>exploding</span>.</div>
+  <div class="section-sub animate">Content supply hasn't caught up</div>
+  <div class="one-col animate">
+    <div class="chart-wrap">
+      <div class="chart-title">Internet Users (billions) vs English Content Share on YouTube (%)</div>
+      <canvas id="gapChart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 4 — LANGUAGE ACCESSIBILITY
+════════════════════════════════════════════ -->
+<div class="slide" data-act="Act I — The Problem">
+  <div class="eyebrow animate">Language accessibility gap</div>
+  <div class="section-title animate">Billions of users. <span>Almost no dubbed content.</span></div>
+  <div class="section-sub animate">YouTube content availability vs. global speaker population</div>
+  <div class="one-col animate">
+    <div class="chart-wrap">
+      <div class="chart-title">% of YouTube content available vs. % of global internet users — by language</div>
+      <canvas id="langChart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 5 — THE OPPORTUNITY
+════════════════════════════════════════════ -->
+<div class="slide" data-act="Act I — The Problem">
+  <div class="eyebrow animate">The opportunity</div>
+  <div class="section-title animate">Real-time dubbing. <span>Zero humans. Zero cost.</span></div>
+  <div class="section-sub animate">Dhvani solves this end-to-end — paste a URL, pick a language, hear it now</div>
+  <div class="stat-grid animate" style="max-width:800px">
+    <div class="stat-card" style="border-color:rgba(70,211,105,.3)">
+      <div class="stat-num green">&lt;2s</div>
+      <div class="stat-label">first dubbed chunk<br/>starts playing</div>
+    </div>
+    <div class="stat-card" style="border-color:rgba(229,9,20,.3)">
+      <div class="stat-num red">3</div>
+      <div class="stat-label">languages supported<br/>ES · JA · ZH</div>
+    </div>
+    <div class="stat-card" style="border-color:rgba(59,130,246,.3)">
+      <div class="stat-num" style="color:var(--blue)">100%</div>
+      <div class="stat-label">voice cloned from<br/>original speaker</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 6 — DEMO TIME
+════════════════════════════════════════════ -->
+<div class="slide" data-act="Act II — Live Demo" style="background:radial-gradient(ellipse at center, rgba(229,9,20,.06) 0%, transparent 70%)">
+  <div class="demo-center">
+    <div class="eyebrow animate" style="font-size:14px;letter-spacing:4px">Live Demo</div>
+    <div class="hero animate" style="font-size:96px">Let's <span>watch</span> it.</div>
+    <div class="demo-url animate">localhost:8011</div>
+    <div class="demo-hint animate">Paste any YouTube URL → select a language → Dhvani dubs it live</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 7 — SYSTEM PIPELINE
+════════════════════════════════════════════ -->
+<div class="slide" data-act="Act III — How It Works">
+  <div class="eyebrow animate">System design</div>
+  <div class="section-title animate">The <span>full pipeline</span></div>
+  <div class="section-sub animate">Every stage runs on a different service — orchestrated in Python</div>
+  <div class="pipeline animate">
+    <div class="pipe-stage">
+      <div class="pipe-icon">📺</div>
+      <div class="pipe-name">YouTube</div>
+      <div class="pipe-model">pytubefix + ffmpeg</div>
+      <div class="pipe-detail">Download audio<br/>Convert to 16kHz mono WAV</div>
+    </div>
+    <div class="pipe-arrow"><span>→</span></div>
+    <div class="pipe-stage highlight">
+      <div class="pipe-icon">🎙️</div>
+      <div class="pipe-name">ASR</div>
+      <div class="pipe-model">Higgs ASR 3</div>
+      <div class="pipe-detail">English transcription<br/>+ caption validation</div>
+    </div>
+    <div class="pipe-arrow"><span>→</span></div>
+    <div class="pipe-stage highlight">
+      <div class="pipe-icon">🧠</div>
+      <div class="pipe-name">Brain</div>
+      <div class="pipe-model">GPT-OSS 120B</div>
+      <div class="pipe-detail">Translation<br/>→ Higgs AST fallback</div>
+    </div>
+    <div class="pipe-arrow"><span>→</span></div>
+    <div class="pipe-stage highlight">
+      <div class="pipe-icon">🔊</div>
+      <div class="pipe-name">TTS</div>
+      <div class="pipe-model">Higgs TTS 2.5</div>
+      <div class="pipe-detail">Voice clone + emotion<br/>→ WAV output</div>
+    </div>
+    <div class="pipe-arrow"><span>→</span></div>
+    <div class="pipe-stage">
+      <div class="pipe-icon">🌐</div>
+      <div class="pipe-name">Browser</div>
+      <div class="pipe-model">WebSocket + Web Audio</div>
+      <div class="pipe-detail">Timestamp-synced<br/>playback</div>
+    </div>
+  </div>
+  <div style="margin-top:28px;font-size:12px;color:var(--text4);font-family:var(--mono)" class="animate">
+    FastAPI backend &nbsp;·&nbsp; asyncio.gather() &nbsp;·&nbsp; WebSocket streaming &nbsp;·&nbsp; base64 WAV transport
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 8 — CHUNKING STRATEGY
+════════════════════════════════════════════ -->
+<div class="slide" data-act="Act III — How It Works">
+  <div class="eyebrow animate">Chunking strategy</div>
+  <div class="section-title animate">Audio sliced into <span>3-second windows</span></div>
+  <div class="section-sub animate">Fixed-size chunks enable parallel processing and timestamp-accurate playback</div>
+  <div class="chunk-timeline animate">
+    <div class="timeline-labels" id="tlabels"></div>
+    <div class="timeline-bar" id="tbar"></div>
+    <div style="margin-top:16px;font-size:12px;color:var(--text3);font-family:var(--mono);text-align:center">
+      Each chunk = 3s × 16kHz × 16-bit mono = <span style="color:var(--yellow)">~96KB PCM</span>
+    </div>
+    <div class="chunk-legend">
+      <div class="cl-item"><div class="cl-dot" style="background:rgba(59,130,246,.6);border:1px solid var(--blue)"></div> Normal speech</div>
+      <div class="cl-item"><div class="cl-dot" style="background:rgba(70,211,105,.6);border:1px solid var(--green)"></div> Voice reference (loudest of first 5)</div>
+      <div class="cl-item"><div class="cl-dot" style="background:rgba(255,255,255,.08);border:1px solid var(--border2)"></div> Silence (skipped)</div>
+      <div class="cl-item"><div class="cl-dot" style="background:rgba(229,9,20,.6);border:1px solid var(--red)"></div> Currently dubbing</div>
+    </div>
+  </div>
+  <div style="margin-top:24px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;max-width:960px" class="animate">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:12px">
+      <div style="color:var(--red);font-weight:700;margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:1px">Silence Detection</div>
+      <div style="color:var(--text3)">RMS &lt; 0.005 → chunk skipped entirely. No wasted API calls.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:12px">
+      <div style="color:var(--yellow);font-weight:700;margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:1px">Min chunk size</div>
+      <div style="color:var(--text3)">Segments &lt; 1600 samples (0.1s) are discarded — too short to transcribe.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:12px">
+      <div style="color:var(--green);font-weight:700;margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:1px">Timestamp metadata</div>
+      <div style="color:var(--text3)">Every chunk carries start_s + dur_s → browser syncs audio to video clock.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 9 — 3-QUEUE PIPELINE
+════════════════════════════════════════════ -->
+<div class="slide" data-act="Act III — How It Works">
+  <div class="eyebrow animate">Concurrency</div>
+  <div class="section-title animate">3 stages. <span>Running simultaneously.</span></div>
+  <div class="section-sub animate">While TTS speaks chunk N → Brain translates N+1 → ASR transcribes N+2</div>
+  <div class="queue-diagram animate" id="queueDiagram">
+    <div class="queue-row">
+      <div class="queue-label">ASR stage</div>
+      <div class="queue-lane" id="lane-asr"></div>
+    </div>
+    <div class="queue-row">
+      <div class="queue-label">Brain stage</div>
+      <div class="queue-lane" id="lane-brain"></div>
+    </div>
+    <div class="queue-row">
+      <div class="queue-label">TTS stage</div>
+      <div class="queue-lane" id="lane-tts"></div>
+    </div>
+    <div class="queue-row">
+      <div class="queue-label" style="color:var(--green)">→ Browser</div>
+      <div class="queue-lane" id="lane-done"></div>
+    </div>
+  </div>
+  <div class="queue-legend animate">
+    <div class="ql-item"><div class="ql-dot" style="background:rgba(59,130,246,.7)"></div> Transcribing</div>
+    <div class="ql-item"><div class="ql-dot" style="background:rgba(168,85,247,.7)"></div> Translating</div>
+    <div class="ql-item"><div class="ql-dot" style="background:rgba(229,9,20,.7)"></div> Generating TTS</div>
+    <div class="ql-item"><div class="ql-dot" style="background:rgba(70,211,105,.5)"></div> Playing</div>
+  </div>
+  <div style="margin-top:24px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px;font-family:var(--mono);font-size:12px;color:var(--text3);max-width:700px" class="animate">
+    <span style="color:var(--text4)">python</span>&nbsp;&nbsp;
+    <span style="color:var(--purple)">await</span> asyncio.<span style="color:var(--green)">gather</span>(
+    <span style="color:var(--blue)">asr_stage</span>(),&nbsp;
+    <span style="color:var(--purple)">brain_stage</span>(),&nbsp;
+    <span style="color:var(--red)">tts_stage</span>()
+    )
+    &nbsp;&nbsp;<span style="color:var(--text4)"># bounded queues: maxsize=6</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 10 — HALLUCINATION FILTER
+════════════════════════════════════════════ -->
+<div class="slide" data-act="Act III — How It Works">
+  <div class="eyebrow animate">Quality control</div>
+  <div class="section-title animate">ASR <span>hallucination filter</span></div>
+  <div class="section-sub animate">Whisper-class models sometimes invent text. We catch it using YouTube's own captions.</div>
+  <div class="hall-flow animate">
+    <div class="hall-row">
+      <div class="hall-box whisper">
+        <div class="hb-label blue">Higgs ASR 3 output</div>
+        <div class="hb-text">"subscribe to my channel and hit the bell"</div>
+        <div class="overlap-bar"><div class="overlap-fill" style="width:22%;background:var(--red)" id="badOverlap"></div></div>
+        <div style="font-size:10px;color:var(--red);margin-top:4px;font-family:var(--mono)">word overlap: 22% — FAIL</div>
+      </div>
+      <div class="hall-arrow">→</div>
+      <div class="hall-box caption">
+        <div class="hb-label yellow">YouTube caption (ground truth)</div>
+        <div class="hb-text">"the solution scales linearly with input size"</div>
+      </div>
+      <div class="hall-arrow">→</div>
+      <div class="hall-box fail">
+        <div class="hb-label red">decision</div>
+        <div class="hb-text">Overlap &lt; 30% → <strong>use caption</strong> instead</div>
+      </div>
+    </div>
+    <div style="text-align:center;color:var(--text4);font-size:20px;margin:4px 0">vs</div>
+    <div class="hall-row">
+      <div class="hall-box whisper">
+        <div class="hb-label blue">Higgs ASR 3 output</div>
+        <div class="hb-text">"the solution scales linearly with input"</div>
+        <div class="overlap-bar"><div class="overlap-fill" style="width:83%;background:var(--green)" id="goodOverlap"></div></div>
+        <div style="font-size:10px;color:var(--green);margin-top:4px;font-family:var(--mono)">word overlap: 83% — PASS</div>
+      </div>
+      <div class="hall-arrow">→</div>
+      <div class="hall-box caption">
+        <div class="hb-label yellow">YouTube caption</div>
+        <div class="hb-text">"the solution scales linearly with input size"</div>
+      </div>
+      <div class="hall-arrow">→</div>
+      <div class="hall-box pass">
+        <div class="hb-label green">decision</div>
+        <div class="hb-text">Overlap ≥ 30% → <strong>use ASR output</strong> ✓</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 11 — VOICE CLONING
+════════════════════════════════════════════ -->
+<div class="slide" data-act="Act III — How It Works">
+  <div class="eyebrow animate">Voice cloning</div>
+  <div class="section-title animate">Capture the speaker. <span>Clone the voice.</span></div>
+  <div class="section-sub animate">Picks the loudest of the first 5 chunks as the voice reference for Higgs TTS 2.5</div>
+  <div class="voice-grid animate" id="voiceChunks"></div>
+  <div class="voice-arrow animate">
+    <span style="color:var(--text4)">Loudest chunk →</span>
+    <div class="voice-box">🎤 Voice fingerprint extracted</div>
+    <span style="color:var(--text4)">→</span>
+    <div style="background:var(--surface2);border:1px solid var(--red);border-radius:8px;padding:12px 24px;font-family:var(--mono);font-size:12px;color:var(--red)">Higgs TTS 2.5 voice_reference_file</div>
+    <span style="color:var(--text4)">→</span>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 24px;font-family:var(--mono);font-size:12px;color:var(--text3)">Dubbed in same voice</div>
+  </div>
+  <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:700px" class="animate">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:12px">
+      <div style="color:var(--yellow);font-weight:700;margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:1px">RMS threshold</div>
+      <div style="color:var(--text3)">If loudest RMS &lt; 0.01 (near silence), voice clone disabled — TTS falls back to default voice.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:12px">
+      <div style="color:var(--green);font-weight:700;margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:1px">Hallucination guard</div>
+      <div style="color:var(--text3)">TTS output &gt; 500KB for a 3s chunk → dropped. Higgs TTS 2.5 can hallucinate long audio on CJK.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 12 — LATENCY BREAKDOWN
+════════════════════════════════════════════ -->
+<div class="slide" data-act="Act III — How It Works">
+  <div class="eyebrow animate">Performance</div>
+  <div class="section-title animate">Latency per <span>3-second chunk</span></div>
+  <div class="section-sub animate">End-to-end from audio chunk ready → dubbed audio playing in browser</div>
+  <div class="latency-grid animate">
+    <div class="lat-card" style="border-color:rgba(59,130,246,.3)">
+      <div class="lat-ms" style="color:var(--blue)">~400ms</div>
+      <div class="lat-stage">ASR</div>
+      <div class="lat-model">Higgs ASR 3 (cloud)</div>
+    </div>
+    <div class="lat-card" style="border-color:rgba(168,85,247,.3)">
+      <div class="lat-ms" style="color:var(--purple)">~600ms</div>
+      <div class="lat-stage">Translation</div>
+      <div class="lat-model">GPT-OSS 120B</div>
+    </div>
+    <div class="lat-card" style="border-color:rgba(229,9,20,.3)">
+      <div class="lat-ms" style="color:var(--red)">~3200ms</div>
+      <div class="lat-stage">TTS</div>
+      <div class="lat-model">Higgs TTS 2.5 (voice clone)</div>
+    </div>
+  </div>
+  <div class="one-col animate">
+    <div class="chart-wrap">
+      <div class="chart-title">Sequential vs Parallel pipeline total latency (ms per chunk)</div>
+      <canvas id="latencyChart" height="130"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 13 — CLOSING
+════════════════════════════════════════════ -->
+<div class="slide" data-act="Dhvani">
+  <div class="eyebrow animate">Built in 48 hours</div>
+  <div class="section-title animate">Dhv<span>a</span>ni</div>
+  <div class="section-sub animate" style="margin-bottom:40px">ध्वनि — Sanskrit for "sound"</div>
+  <div class="closing-grid animate">
+    <div class="closing-card" style="border-color:rgba(70,211,105,.2)">
+      <div class="cc-title" style="color:var(--green)">What we built</div>
+      <div class="cc-item"><div class="cc-dot" style="background:var(--green)"></div>End-to-end real-time dubbing pipeline</div>
+      <div class="cc-item"><div class="cc-dot" style="background:var(--green)"></div>Voice cloning from source speaker</div>
+      <div class="cc-item"><div class="cc-dot" style="background:var(--green)"></div>Emotion-preserving TTS speed control</div>
+      <div class="cc-item"><div class="cc-dot" style="background:var(--green)"></div>Hallucination filter via caption validation</div>
+      <div class="cc-item"><div class="cc-dot" style="background:var(--green)"></div>Fully async 3-queue concurrent pipeline</div>
+    </div>
+    <div class="closing-card" style="border-color:rgba(229,9,20,.2)">
+      <div class="cc-title" style="color:var(--red)">What's next</div>
+      <div class="cc-item"><div class="cc-dot" style="background:var(--red)"></div>More languages — Hindi, Korean, Arabic</div>
+      <div class="cc-item"><div class="cc-dot" style="background:var(--red)"></div>Lip-sync video generation</div>
+      <div class="cc-item"><div class="cc-dot" style="background:var(--red)"></div>Live stream dubbing (not just on-demand)</div>
+      <div class="cc-item"><div class="cc-dot" style="background:var(--red)"></div>Browser extension</div>
+      <div class="cc-item"><div class="cc-dot" style="background:var(--red)"></div>Speaker diarization for multi-person videos</div>
+    </div>
+  </div>
+  <div style="margin-top:32px;display:flex;gap:24px;align-items:center" class="animate">
+    <div style="font-size:13px;color:var(--text3)">Built by</div>
+    <div style="padding:8px 20px;border-radius:6px;border:1px solid var(--border2);font-size:13px;font-weight:600">Phani Sai Ram Munipalli</div>
+    <div style="font-size:13px;color:var(--text4)">&amp;</div>
+    <div style="padding:8px 20px;border-radius:6px;border:1px solid var(--border2);font-size:13px;font-weight:600">Vinay Mokidi</div>
+  </div>
+</div>
+
+</div><!-- end deck -->
+
+<!-- Navigation -->
+<div class="nav" id="navDots"></div>
+<button class="nav-arrow nav-prev" onclick="go(-1)">‹</button>
+<button class="nav-arrow nav-next" onclick="go(1)">›</button>
+<div class="slide-counter" id="counter"></div>
+<div class="act-label" id="actLabel"></div>
+<div class="key-hint">← → to navigate</div>
+
+<script>
+// ── NAVIGATION ──
+const slides = [...document.querySelectorAll('.slide')];
+let cur = 0;
+
+const dots = document.getElementById('navDots');
+slides.forEach((_,i) => {
+  const d = document.createElement('div');
+  d.className = 'nav-dot' + (i===0?' active':'');
+  d.onclick = () => goTo(i);
+  dots.appendChild(d);
+});
+
+function goTo(n) {
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('exit');
+  setTimeout(() => slides[cur].classList.remove('exit'), 500);
+  cur = Math.max(0, Math.min(slides.length-1, n));
+  slides[cur].classList.add('active');
+  document.querySelectorAll('.nav-dot').forEach((d,i) => d.classList.toggle('active', i===cur));
+  document.getElementById('counter').textContent = `${cur+1} / ${slides.length}`;
+  document.getElementById('actLabel').textContent = slides[cur].dataset.act || '';
+  if (cur === 8) initQueueAnimation();   // queue slide
+  if (cur === 7) initChunks();           // chunking slide
+  if (cur === 10) initVoiceChunks();     // voice clone slide
+}
+function go(d){ goTo(cur+d); }
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key==='ArrowDown') go(1);
+  if (e.key==='ArrowLeft'||e.key==='ArrowUp') go(-1);
+});
+goTo(0);
+
+// ── CHART: GAP ──
+new Chart(document.getElementById('gapChart'), {
+  type: 'line',
+  data: {
+    labels: ['2018','2019','2020','2021','2022','2023','2024','2025'],
+    datasets: [
+      {
+        label: 'Non-English Internet Users (B)',
+        data: [2.2, 2.5, 2.9, 3.3, 3.6, 3.9, 4.2, 4.6],
+        borderColor: '#e50914', backgroundColor: 'rgba(229,9,20,.1)',
+        borderWidth: 2.5, fill: true, tension: 0.4, yAxisID: 'y',
+      },
+      {
+        label: 'English Internet Users (B)',
+        data: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.5, 1.6],
+        borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.07)',
+        borderWidth: 2, fill: true, tension: 0.4, yAxisID: 'y',
+      },
+      {
+        label: 'English Content on YouTube (%)',
+        data: [61, 59, 58, 57, 57, 56, 56, 55],
+        borderColor: '#e5a00d', backgroundColor: 'transparent',
+        borderWidth: 2, borderDash: [6,3], tension: 0.3, yAxisID: 'y2',
+      },
+    ]
+  },
+  options: {
+    responsive:true, interaction:{mode:'index',intersect:false},
+    plugins:{legend:{labels:{color:'#808080',font:{size:11}}}},
+    scales:{
+      y:{grid:{color:'#1e1e1e'},ticks:{color:'#666',font:{size:11}},title:{display:true,text:'Billions of users',color:'#666'}},
+      y2:{position:'right',grid:{display:false},ticks:{color:'#666',font:{size:11}},title:{display:true,text:'% English content',color:'#666'},min:40,max:80},
+      x:{grid:{color:'#1a1a1a'},ticks:{color:'#666',font:{size:11}}}
+    }
+  }
+});
+
+// ── CHART: LANGUAGE ACCESSIBILITY ──
+new Chart(document.getElementById('langChart'), {
+  type: 'bar',
+  data: {
+    labels: ['English','Spanish','Chinese','Hindi','Arabic','Portuguese','Japanese','Russian','French','German'],
+    datasets: [
+      {
+        label: '% of YouTube Content Available',
+        data: [56, 8, 6, 4, 3, 5, 4, 3, 4, 3],
+        backgroundColor: 'rgba(229,9,20,.75)', borderRadius: 4,
+      },
+      {
+        label: '% of Global Internet Users',
+        data: [25, 8, 19, 8, 5, 4, 3, 3, 3, 2],
+        backgroundColor: 'rgba(59,130,246,.6)', borderRadius: 4,
+      }
+    ]
+  },
+  options: {
+    responsive:true,
+    plugins:{legend:{labels:{color:'#808080',font:{size:11}}}},
+    scales:{
+      x:{grid:{color:'#1a1a1a'},ticks:{color:'#808080',font:{size:11}}},
+      y:{grid:{color:'#1e1e1e'},ticks:{color:'#666',font:{size:11}},title:{display:true,text:'Percentage (%)',color:'#666'}}
+    }
+  }
+});
+
+// ── CHART: LATENCY ──
+new Chart(document.getElementById('latencyChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Sequential pipeline (old)', 'Parallel 3-queue pipeline (Dhvani)'],
+    datasets: [
+      { label:'ASR', data:[400,400], backgroundColor:'rgba(59,130,246,.7)', borderRadius:4 },
+      { label:'Translation', data:[600,0], backgroundColor:'rgba(168,85,247,.7)', borderRadius:4 },
+      { label:'TTS', data:[3200,0], backgroundColor:'rgba(229,9,20,.7)', borderRadius:4 },
+      { label:'Effective wait (overlapped)', data:[0,3200], backgroundColor:'rgba(70,211,105,.4)', borderRadius:4 },
+    ]
+  },
+  options: {
+    indexAxis:'y', responsive:true,
+    plugins:{
+      legend:{labels:{color:'#808080',font:{size:11}}},
+      tooltip:{
+        callbacks:{
+          footer: items => {
+            const total = items.reduce((s,i)=>s+i.raw,0);
+            return total>0?`Total: ${total}ms`:'';
+          }
+        }
+      }
+    },
+    scales:{
+      x:{stacked:true,grid:{color:'#1a1a1a'},ticks:{color:'#666',font:{size:11}},title:{display:true,text:'milliseconds per chunk',color:'#666'}},
+      y:{stacked:true,grid:{display:false},ticks:{color:'#808080',font:{size:12}}}
+    }
+  }
+});
+
+// ── CHUNKING TIMELINE ──
+function initChunks() {
+  const bar = document.getElementById('tbar');
+  const labels = document.getElementById('tlabels');
+  bar.innerHTML=''; labels.innerHTML='';
+  const total = 14, W = bar.offsetWidth || 900;
+  const rms = [0.12,0.18,0.22,0.08,0.005,0.15,0.19,0.24,0.003,0.17,0.21,0.13,0.16,0.11];
+  const loudestIdx = rms.indexOf(Math.max(...rms.slice(0,5)));
+  for(let i=0;i<total;i++){
+    const left = (i/total)*100;
+    const w = (1/total)*100 - 0.4;
+    const silent = rms[i] < 0.01;
+    let bg, border;
+    if(silent){ bg='rgba(255,255,255,.05)'; border='#2a2a2a'; }
+    else if(i===loudestIdx){ bg='rgba(70,211,105,.55)'; border='#46d369'; }
+    else if(i===3){ bg='rgba(229,9,20,.65)'; border='#e50914'; }
+    else { bg='rgba(59,130,246,.55)'; border='#3b82f6'; }
+    const el = document.createElement('div');
+    el.className='timeline-chunk';
+    el.style.cssText=`left:${left}%;width:${w}%;background:${bg};border-color:${border}`;
+    el.innerHTML=`<span class="tc-num">#${i+1}</span>`;
+    if(!silent) el.innerHTML+=`<span style="font-size:9px;color:rgba(255,255,255,.5)">${Math.round(rms[i]*1000)/10}</span>`;
+    bar.appendChild(el);
+  }
+  for(let i=0;i<total;i+=3){
+    const el=document.createElement('span');
+    el.textContent=`${i*3}s`;
+    labels.appendChild(el);
+  }
+}
+
+// ── QUEUE ANIMATION ──
+let qTimer = null;
+function initQueueAnimation() {
+  if(qTimer) clearInterval(qTimer);
+  ['asr','brain','tts','done'].forEach(l => {
+    document.getElementById('lane-'+l).innerHTML='';
+  });
+  let step = 0;
+  const total = 8;
+  const W = document.getElementById('lane-asr').offsetWidth || 880;
+  const cw = (W/total) - 4;
+
+  function renderLane(id, chunks, cls) {
+    const lane = document.getElementById('lane-'+id);
+    lane.innerHTML='';
+    chunks.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'queue-chunk '+cls;
+      el.style.cssText=`left:${(c/total)*100}%;width:${(cw/W)*100}%`;
+      el.textContent=`#${c+1}`;
+      lane.appendChild(el);
+    });
+  }
+
+  qTimer = setInterval(() => {
+    step = (step+1) % 10;
+    const asr   = step < total ? [step%total, (step+1)%total].filter(x=>x<total) : [];
+    const brain = step > 0 ? [(step-1)%total].filter(x=>x>=0&&x<total) : [];
+    const tts   = step > 1 ? [(step-2)%total].filter(x=>x>=0&&x<total) : [];
+    const done  = [];
+    for(let i=0;i<Math.max(0,step-2);i++) done.push(i%total);
+    renderLane('asr',   asr.slice(0,2), 'q-asr');
+    renderLane('brain', brain, 'q-brain');
+    renderLane('tts',   tts,   'q-tts');
+    renderLane('done',  done.slice(-4), 'q-done');
+  }, 900);
+}
+
+// ── VOICE CHUNKS ──
+function initVoiceChunks() {
+  const rms   = [0.12, 0.22, 0.08, 0.18, 0.31];
+  const loud  = rms.indexOf(Math.max(...rms));
+  const wrap  = document.getElementById('voiceChunks');
+  wrap.innerHTML='';
+  rms.forEach((r,i) => {
+    const el = document.createElement('div');
+    el.className = 'voice-chunk' + (i===loud?' loud':'');
+    el.innerHTML=`
+      <div style="font-size:11px;font-weight:700;color:${i===loud?'var(--green)':'var(--text3)'}">Chunk #${i+1}</div>
+      <div class="vc-bar">
+        <div class="vc-fill" style="height:${Math.round(r*320)}%;background:${i===loud?'var(--green)':'rgba(59,130,246,.6)'}"></div>
+      </div>
+      <div class="vc-rms">RMS: ${r.toFixed(2)}</div>
+      ${i===loud?'<div style="font-size:10px;color:var(--green);margin-top:6px;font-weight:700">✓ SELECTED</div>':''}
+    `;
+    wrap.appendChild(el);
+  });
+}
+</script>
+</body>
+</html>
