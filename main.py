@@ -23,18 +23,6 @@ from emotion import detect_emotion
 
 load_dotenv()
 
-# ─── Gemini (Brain) ───
-from google import genai as _genai
-_gemini_client: "_genai.Client | None" = None
-
-def get_gemini():
-    global _gemini_client
-    if _gemini_client is None:
-        key = os.environ.get("GEMINI_API_KEY", "")
-        if key:
-            _gemini_client = _genai.Client(api_key=key)
-    return _gemini_client
-
 # ─── File logger ───
 LOG_FILE = Path(__file__).parent / "dhvani.log"
 logging.basicConfig(
@@ -386,24 +374,19 @@ async def ws_dub(websocket: WebSocket, session_id: str):
                     await tts_q.put((kind, i, None, None, None, chunk, t_start))
                     continue
 
-                # Gemini Flash Lite: ~200-400ms, no rate limits
+                # GPT-OSS 120B: primary translation
                 t = time.time()
-                translation = await gemini_translate(transcript, lang)
+                translation = await api_translate(transcript, lang)
                 ms_g = int((time.time() - t) * 1000)
 
                 if translation and translation.strip() != transcript.strip():
-                    L(f"[BRAIN:Gemini:{lang}] {i+1}/{total}: {ms_g}ms | \"{translation[:40]}\"")
+                    L(f"[BRAIN:GPT-OSS:{lang}] {i+1}/{total}: {ms_g}ms | \"{translation[:40]}\"")
                 else:
                     # Fallback: Higgs AST
                     t = time.time()
                     translation = await api_ast(wav_bytes, lang_name)
                     L(f"[BRAIN:AST:{lang}] {i+1}/{total}: {int((time.time()-t)*1000)}ms | \"{(translation or '')[:40]}\"")
 
-                    if not translation or translation.strip() == transcript.strip():
-                        # Last resort: GPT-OSS
-                        t = time.time()
-                        translation = await api_translate(transcript, lang)
-                        L(f"[BRAIN:GPT:{lang}] {i+1}/{total}: {int((time.time()-t)*1000)}ms | \"{(translation or '')[:40]}\"")
 
                 if not translation or translation.strip() == transcript.strip():
                     await tts_q.put(("skip", i, transcript, None, None, chunk, t_start))
@@ -520,28 +503,6 @@ async def ws_dub(websocket: WebSocket, session_id: str):
 
 
 # ─── API helpers ───
-
-async def gemini_translate(text: str, lang: str) -> str | None:
-    """Fast translation via Gemini Flash Lite — ~200ms, no rate limits."""
-    import re as _re
-    lang_name = LANGUAGES.get(lang, lang)
-    try:
-        client = get_gemini()
-        if not client:
-            return None
-        resp = await client.aio.models.generate_content(
-            model="gemini-3.1-flash-lite-preview",
-            contents=f"Translate to {lang_name}. Reply with ONLY the translated text, no markdown:\n{text}",
-        )
-        result = (resp.text or "").strip()
-        result = _re.sub(r'\*+', '', result).strip("\"'`_ \n")
-        if not result or result.lower() == text.lower(): return None
-        if len(result) > len(text) * 4: return None  # hallucination guard
-        return result
-    except Exception as e:
-        L(f"[Gemini] Error: {e}")
-        return None
-
 
 async def api_asr(wav_bytes: bytes) -> str | None:
     """Cloud ASR via Higgs ASR 3 (Eigen API) — transcribes English audio to text."""
@@ -695,4 +656,4 @@ def is_noise(text: str) -> bool:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8011, reload=True)
