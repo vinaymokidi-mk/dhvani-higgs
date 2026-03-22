@@ -5,7 +5,7 @@ Clean rewrite: simple sequential pipeline with full file logging.
 Design:
   1. /api/youtube/prepare  → download YT audio, split into 3s chunks, store in session
   2. /ws/dub/{session_id}  → WebSocket: client sends {lang}, server streams dubbed chunks
-  3. Per chunk: ASR → AST (parallel) → GPT-OSS fallback → Higgs TTS → send WAV to client
+  3. Per chunk: Higgs ASR 3 → Gemini translate → Higgs TTS 2.5 → send WAV to client
 
 Logging: every API call timed and written to dhvani.log
 """
@@ -22,23 +22,6 @@ from dotenv import load_dotenv
 from emotion import detect_emotion
 
 load_dotenv()
-
-# ─── KMP fix for faster-whisper + numpy coexistence ───
-os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
-
-# ─── Parakeet/Whisper local ASR (faster-whisper base.en) ───
-# Loaded once at startup — no API calls, no network, flat ~1.3s per chunk
-_whisper_model = None
-
-def get_whisper():
-    global _whisper_model
-    if _whisper_model is None:
-        from faster_whisper import WhisperModel
-        L("[ASR-LOCAL] Loading faster-whisper base.en...")
-        t = time.time()
-        _whisper_model = WhisperModel("base.en", device="cpu", compute_type="int8")
-        L(f"[ASR-LOCAL] Loaded in {time.time()-t:.1f}s")
-    return _whisper_model
 
 # ─── Gemini (Brain) ───
 from google import genai as _genai
@@ -123,9 +106,7 @@ async def get_http() -> httpx.AsyncClient:
 
 @app.on_event("startup")
 async def startup():
-    # Pre-load local ASR model in background so first request isn't slow
-    loop = asyncio.get_event_loop()
-    loop.run_in_executor(None, get_whisper)
+    L("[STARTUP] Dhvani ready — Higgs ASR 3 + Gemini + Higgs TTS 2.5")
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -371,13 +352,13 @@ async def ws_dub(websocket: WebSocket, session_id: str):
                         if whisper_text and i in caption_map:
                             overlap = word_overlap(whisper_text, caption_map[i])
                             if overlap < 0.3:
-                                L(f"[ASR] {i+1}/{total}: {ms_asr}ms | hallucination detected (overlap={overlap:.2f}) → using caption")
+                                L(f"[ASR-HIGGS] {i+1}/{total}: {ms_asr}ms | hallucination detected (overlap={overlap:.2f}) → using caption")
                                 transcript_cache[i] = caption_map[i]
                             else:
-                                L(f"[ASR] {i+1}/{total}: {ms_asr}ms | confirmed by caption (overlap={overlap:.2f}) | \"{(whisper_text or '')[:40]}\"")
+                                L(f"[ASR-HIGGS] {i+1}/{total}: {ms_asr}ms | confirmed by caption (overlap={overlap:.2f}) | \"{(whisper_text or '')[:40]}\"")
                                 transcript_cache[i] = whisper_text
                         else:
-                            L(f"[ASR] {i+1}/{total}: {ms_asr}ms | no caption | \"{(whisper_text or '')[:40]}\"")
+                            L(f"[ASR-HIGGS] {i+1}/{total}: {ms_asr}ms | no caption | \"{(whisper_text or '')[:40]}\"")
                             transcript_cache[i] = whisper_text
                     else:
                         L(f"[ASR] {i+1}/{total}: reused transcript for {lang}")
@@ -563,26 +544,23 @@ async def gemini_translate(text: str, lang: str) -> str | None:
 
 
 async def api_asr(wav_bytes: bytes) -> str | None:
-    """Local ASR via faster-whisper base.en — ~1.3s flat, no API calls, no spikes."""
+    """Cloud ASR via Higgs ASR 3 (Eigen API) — transcribes English audio to text."""
+    if not EIGEN_KEY:
+        return None
     try:
-        # Decode wav bytes → float32 numpy array
-        buf = io.BytesIO(wav_bytes)
-        with wave.open(buf, "rb") as wf:
-            frames = wf.readframes(wf.getnframes())
-            sr = wf.getframerate()
-        audio = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
-
-        # Run in executor so it doesn't block the event loop
-        loop = asyncio.get_event_loop()
-        def _transcribe():
-            model = get_whisper()
-            segs, _ = model.transcribe(audio, beam_size=1, language="en", condition_on_previous_text=False)
-            return " ".join(s.text for s in segs).strip()
-
-        text = await loop.run_in_executor(None, _transcribe)
-        return text or None
+        client = await get_http()
+        resp = await client.post(
+            f"{EIGEN_BASE}/api/v1/generate",
+            headers={"Authorization": f"Bearer {EIGEN_KEY}"},
+            files={"file": ("audio.wav", wav_bytes, "audio/wav")},
+            data={"model": "higgs_asr_3", "task": "asr"},
+        )
+        if resp.status_code != 200:
+            L(f"[ASR-HIGGS] HTTP {resp.status_code}")
+            return None
+        return resp.json().get("transcription", "").strip() or None
     except Exception as e:
-        L(f"[ASR-LOCAL] Error: {e}")
+        L(f"[ASR-HIGGS] Error: {e}")
         return None
 
 
