@@ -561,7 +561,7 @@ function addTranscriptItem(m) {
   item.className = 'transcript-item';
   item.id = 'ti-' + m.index;
   const timeStr = m.start_s !== undefined ? `${m.start_s.toFixed(1)}s` : '';
-  const latStr = m.cached ? '<span class="ti-cached">cached</span>' : `<span class="ti-latency">${m.latency}ms</span>`;
+  const latStr = m.cached ? '' : `<span class="ti-latency">${m.latency}ms</span>`;
   item.innerHTML = `
     <div class="ti-meta">
       <span class="ti-chunk">#${m.index+1} <span style="color:var(--text4)">${timeStr}</span></span>

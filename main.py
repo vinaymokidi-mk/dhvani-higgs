@@ -135,6 +135,41 @@ async def shutdown():
 # ─── Sessions ───
 _sessions: dict[str, dict] = {}
 
+# ─── Caption helpers ───
+def parse_captions(xml: str) -> list[dict]:
+    """Parse YouTube caption XML → [{start_s, end_s, text}]"""
+    import re, html
+    out = []
+    for m in re.finditer(r'<text start="([^"]+)" dur="([^"]+)"[^>]*>(.*?)</text>', xml, re.DOTALL):
+        start = float(m.group(1))
+        dur   = float(m.group(2))
+        text  = html.unescape(re.sub(r'<[^>]+>', '', m.group(3))).strip()
+        if text:
+            out.append({"start_s": start, "end_s": start + dur, "text": text})
+    return out
+
+def build_caption_map(chunks: list[dict], captions: list[dict]) -> dict[int, str]:
+    """Map chunk index → joined caption text that overlaps its time range"""
+    out = {}
+    for i, chunk in enumerate(chunks):
+        cs, ce = chunk["start_s"], chunk["start_s"] + chunk["dur_s"]
+        words = []
+        for cap in captions:
+            # overlap check
+            if cap["end_s"] > cs and cap["start_s"] < ce:
+                words.append(cap["text"])
+        if words:
+            out[i] = " ".join(words)
+    return out
+
+def word_overlap(a: str, b: str) -> float:
+    """Ratio of shared words between two strings (0.0 – 1.0)"""
+    wa = set(a.lower().split())
+    wb = set(b.lower().split())
+    if not wa or not wb:
+        return 0.0
+    return len(wa & wb) / max(len(wa), len(wb))
+
 # ─── Routes ───
 @app.get("/")
 async def index():
@@ -165,6 +200,17 @@ async def youtube_prepare(request: Request):
         from pytubefix import YouTube
         yt    = YouTube(url)
         title = yt.title
+        # Fetch English captions (manual preferred, auto-generated fallback)
+        raw_captions = []
+        try:
+            cap_track = yt.captions.get("en") or yt.captions.get("a.en")
+            if cap_track:
+                raw_captions = parse_captions(cap_track.xml_captions)
+                L(f"[PREPARE] Captions loaded: {len(raw_captions)} entries")
+            else:
+                L("[PREPARE] No English captions found — whisper only")
+        except Exception as ce:
+            L(f"[PREPARE] Caption fetch failed: {ce} — whisper only")
         stream = yt.streams.filter(only_audio=True).order_by("abr").desc().first()
         if not stream:
             return JSONResponse({"error": "No audio stream"}, status_code=400)
@@ -233,6 +279,7 @@ async def youtube_prepare(request: Request):
         "total":     len(chunks),
         "voice_ref": voice_ref,
         "cache":     lang_caches,
+        "captions":  raw_captions,
     }
 
     try:
@@ -271,6 +318,14 @@ async def ws_dub(websocket: WebSocket, session_id: str):
     active_task: asyncio.Task | None = None
     flag = {"cancelled": False}
 
+    # Shared ASR transcript cache — transcribe each chunk once, reuse across all languages
+    transcript_cache: dict[int, str | None] = {}
+    asr_locks: dict[int, asyncio.Lock] = {i: asyncio.Lock() for i in range(total)}
+
+    # Caption map for hallucination validation
+    caption_map = build_caption_map(chunks, session.get("captions", []))
+    L(f"[WS] Caption coverage: {len(caption_map)}/{total} chunks")
+
     L(f"[WS] Connected: {session_id} ({total} chunks)")
 
     # ── 3-Queue Pipeline: ASR → Brain(Gemini) → TTS — all overlapping ──
@@ -307,9 +362,26 @@ async def ws_dub(websocket: WebSocket, session_id: str):
                 emo       = detect_emotion(pcm_raw, 16000)
                 t_start   = time.time()
 
-                t = time.time()
-                transcript = await api_asr(wav_bytes)
-                L(f"[ASR:{lang}] {i+1}/{total}: {int((time.time()-t)*1000)}ms | \"{(transcript or '')[:40]}\"")
+                async with asr_locks[i]:
+                    if i not in transcript_cache:
+                        t = time.time()
+                        whisper_text = await api_asr(wav_bytes)
+                        ms_asr = int((time.time() - t) * 1000)
+                        # Validate against caption if available
+                        if whisper_text and i in caption_map:
+                            overlap = word_overlap(whisper_text, caption_map[i])
+                            if overlap < 0.3:
+                                L(f"[ASR] {i+1}/{total}: {ms_asr}ms | hallucination detected (overlap={overlap:.2f}) → using caption")
+                                transcript_cache[i] = caption_map[i]
+                            else:
+                                L(f"[ASR] {i+1}/{total}: {ms_asr}ms | confirmed by caption (overlap={overlap:.2f}) | \"{(whisper_text or '')[:40]}\"")
+                                transcript_cache[i] = whisper_text
+                        else:
+                            L(f"[ASR] {i+1}/{total}: {ms_asr}ms | no caption | \"{(whisper_text or '')[:40]}\"")
+                            transcript_cache[i] = whisper_text
+                    else:
+                        L(f"[ASR] {i+1}/{total}: reused transcript for {lang}")
+                transcript = transcript_cache[i]
 
                 if not transcript or is_noise(transcript):
                     await text_q.put(("silent", i, None, None, None, None))
